@@ -1,0 +1,21 @@
+# Copy this file to local.properties and fill it in. local.properties is git-ignored:
+# your keys and choices never leave your computer (they are compiled into the APK only).
+
+# Path to the Android SDK. Android Studio puts it here on macOS.
+sdk.dir=/Users/YOUR_NAME/Library/Android/sdk
+
+# --- Dock ---
+# Apps in the dock on first launch, left to right, as package names (comma-separated).
+# Leave empty for the default (YouTube, YouTube Music, Twitch, Plex, Netflix).
+# List installed apps with:  adb shell pm list packages -3
+# After first launch you edit the dock on the TV (hold OK on a tile).
+dock.apps=
+
+# --- Twitch "Live now" card (optional) ---
+# Free keys from https://dev.twitch.tv/console > Register Your Application
+# (Category: Application Integration, Client Type: Confidential, Redirect URL: http://localhost).
+# Leave empty to hide the card.
+twitch.clientId=
+twitch.clientSecret=
+# Twitch usernames to watch, comma-separated (as in twitch.tv/<username>).
+twitch.streamers=
