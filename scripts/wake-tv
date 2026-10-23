@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Wake the TV from standby over the network (Wake-on-LAN).
+#
+# Usage: wake-tv
+#
+# Reads tv.ip and tv.mac from local.properties. On the TV, Wake-on-LAN must be on
+# (Philips: Settings > Wireless & networks > Wired or Wi-Fi > Switch on with Wi-Fi).
+
+set -euo pipefail
+
+repo="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+props="$repo/local.properties"
+
+prop() { grep -E "^$1=" "$props" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]'; }
+
+TV_IP="$(prop tv.ip)"
+TV_MAC="$(prop tv.mac)"
+if [[ -z "$TV_IP" || -z "$TV_MAC" ]]; then
+  echo "Set tv.ip and tv.mac in $props" >&2
+  exit 1
+fi
+
+echo "Sending wake-up signal to $TV_IP ($TV_MAC)..."
+python3 - "$TV_IP" "$TV_MAC" <<'PY'
+import socket, sys, time
+ip, mac = sys.argv[1], sys.argv[2]
+packet = b"\xff" * 6 + bytes.fromhex(mac.replace(":", "").replace("-", "")) * 16
+subnet = ".".join(ip.split(".")[:3]) + ".255"
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+# Wi-Fi wake is lossy: send to every usual target a few times.
+for _ in range(5):
+    for target in (subnet, "255.255.255.255", ip):
+        for port in (9, 7):
+            try:
+                s.sendto(packet, (target, port))
+            except OSError:
+                pass
+    time.sleep(0.3)
+PY
+
+# Wait for the TV to answer, then make sure the screen is on.
+for _ in $(seq 1 30); do
+  if nc -z -G 1 "$TV_IP" 5555 >/dev/null 2>&1; then
+    if command -v adb >/dev/null; then
+      adb connect "$TV_IP:5555" >/dev/null 2>&1 || true
+      adb -s "$TV_IP:5555" shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+    fi
+    echo "TV is awake."
+    exit 0
+  fi
+  sleep 1
+done
+
+echo "No answer from the TV after 30s. It may be in deep standby or unplugged." >&2
+exit 1

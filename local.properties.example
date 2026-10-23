@@ -19,3 +19,8 @@ twitch.clientId=
 twitch.clientSecret=
 # Twitch usernames to watch, comma-separated (as in twitch.tv/<username>).
 twitch.streamers=
+
+# TV network address, used by scripts/wake-tv.
+# tv.ip: Settings > Network > your Wi-Fi. tv.mac: the Wi-Fi MAC address shown there.
+tv.ip=
+tv.mac=
