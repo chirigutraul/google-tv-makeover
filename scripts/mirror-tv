@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Show the Mac's screen (and sound) on the TV. Stop with stop-tv-mirror.
+#
+# Usage: mirror-tv [--extend] [--1080] [--fps 60] [--mbps N] [--h264] [--no-audio] [--mac-sound]
+#   --extend  the TV becomes a second screen (its own 16:9 desktop) instead of a copy of the Mac's
+#   --smooth  the TV holds 150 ms of frames and plays them evenly: hides Wi-Fi hiccups, adds delay
+#
+# Reads tv.ip from local.properties. Needs the tvhome app on the TV (it has the Mirror screen)
+# and, the first time, Screen Recording permission for your terminal app on the Mac.
+
+set -euo pipefail
+
+repo="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+props="$repo/local.properties"
+bin="$repo/mac/.build/tvmirror"
+src="$repo/mac/tvmirror.swift"
+header="$repo/mac/CGVirtualDisplay.h"
+pidfile="${TMPDIR:-/tmp}/tvmirror.pid"
+logfile="${TMPDIR:-/tmp}/tvmirror.log"
+
+prop() { grep -E "^$1=" "$props" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]'; }
+
+TV_IP="$(prop tv.ip)"
+[[ -n "$TV_IP" ]] || { echo "Set tv.ip in $props" >&2; exit 1; }
+TV="$TV_IP:5555"
+
+# --smooth is for the TV; everything else goes to tvmirror.
+smooth=0 args=()
+for arg in "$@"; do
+  if [[ "$arg" == "--smooth" ]]; then smooth=150; else args+=("$arg"); fi
+done
+
+if [[ -f "$pidfile" ]] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then
+  echo "Already mirroring. Run stop-tv-mirror first."
+  exit 0
+fi
+
+if [[ ! -x "$bin" || "$src" -nt "$bin" || "$header" -nt "$bin" ]]; then
+  echo "Building the Mac side (first run only)..."
+  mkdir -p "$(dirname "$bin")"
+  swiftc -O -swift-version 5 -import-objc-header "$header" "$src" -o "$bin"
+fi
+
+if ! nc -z -G 2 "$TV_IP" 5555 >/dev/null 2>&1; then
+  "$repo/scripts/wake-tv"
+fi
+adb connect "$TV" >/dev/null
+
+# The TV only accepts a stream from this Mac's address.
+iface="$(route -n get "$TV_IP" | awk '/interface:/ {print $2}')"
+MAC_IP="$(ipconfig getifaddr "$iface")"
+
+adb -s "$TV" shell am start -n dev.raul.tvhome/.MirrorActivity --es from "$MAC_IP" --ei smoothMs "$smooth" >/dev/null
+for _ in $(seq 1 20); do
+  nc -z -G 1 "$TV_IP" 7070 >/dev/null 2>&1 && break
+  sleep 0.5
+done
+
+nohup "$bin" "$TV_IP" ${args[@]+"${args[@]}"} >"$logfile" 2>&1 &
+echo $! >"$pidfile"
+sleep 2
+
+if kill -0 "$(cat "$pidfile")" 2>/dev/null; then
+  head -1 "$logfile"
+  echo "Run stop-tv-mirror to stop."
+else
+  rm -f "$pidfile"
+  cat "$logfile" >&2
+  exit 1
+fi

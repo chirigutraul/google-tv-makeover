@@ -20,7 +20,7 @@ twitch.clientSecret=
 # Twitch usernames to watch, comma-separated (as in twitch.tv/<username>).
 twitch.streamers=
 
-# TV network address, used by scripts/wake-tv.
+# TV network address, used by wake-tv, sleep-tv and mirror-tv (docs/07-mac-control.md).
 # tv.ip: Settings > Network > your Wi-Fi. tv.mac: the Wi-Fi MAC address shown there.
 tv.ip=
 tv.mac=

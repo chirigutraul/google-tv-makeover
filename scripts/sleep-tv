@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Put the TV in standby, like the remote's power button. Wake it again with wake-tv.
+#
+# Usage: sleep-tv
+#
+# Reads tv.ip from local.properties. Stops Mac mirroring first if it is running.
+
+set -euo pipefail
+
+repo="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+props="$repo/local.properties"
+
+prop() { grep -E "^$1=" "$props" 2>/dev/null | head -1 | cut -d= -f2- | tr -d '[:space:]'; }
+
+TV_IP="$(prop tv.ip)"
+[[ -n "$TV_IP" ]] || { echo "Set tv.ip in $props" >&2; exit 1; }
+TV="$TV_IP:5555"
+
+if ! nc -z -G 2 "$TV_IP" 5555 >/dev/null 2>&1; then
+  echo "TV is not reachable; it is probably already in standby."
+  exit 0
+fi
+
+"$repo/scripts/stop-tv-mirror" >/dev/null
+
+adb connect "$TV" >/dev/null
+if ! adb -s "$TV" shell dumpsys power | grep -q "mWakefulness=Awake"; then
+  echo "TV is already in standby."
+  exit 0
+fi
+
+# KEYCODE_SLEEP only ever turns the TV off (POWER would toggle it).
+adb -s "$TV" shell input keyevent KEYCODE_SLEEP
+for _ in $(seq 1 10); do
+  if ! adb -s "$TV" shell dumpsys power 2>/dev/null | grep -q "mWakefulness=Awake"; then
+    echo "TV is in standby. Run wake-tv to turn it on."
+    exit 0
+  fi
+  sleep 0.5
+done
+
+echo "The TV didn't go to standby." >&2
+exit 1

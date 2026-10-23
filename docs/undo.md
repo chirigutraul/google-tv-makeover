@@ -30,6 +30,8 @@ adb -s $TV shell cmd package install-existing <package>
 adb -s $TV shell pm list packages -d
 ```
 
+Mac commands ([07-mac-control](07-mac-control.md)): `rm ~/.local/bin/{wake-tv,sleep-tv,mirror-tv,stop-tv-mirror}`, and turn off your terminal in System Settings → Privacy & Security → Screen & System Audio Recording. If mirroring ever left the Mac muted: `osascript -e "set volume without output muted"`.
+
 A factory reset also undoes all of it (and erases everything else on the TV).
 
 When finished, you can turn off **Wireless debugging** in Developer options.

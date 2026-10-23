@@ -41,6 +41,28 @@ Work through the parts in order. The user can stop after any part.
 ### 5. Twitch card: [docs/06-twitch.md](docs/06-twitch.md)
 - Walk them through getting keys; they paste keys into `local.properties` themselves. Verify keys with the curl check in the doc (don't echo the secret).
 
+### 6. Mac commands (optional, macOS only): [docs/07-mac-control.md](docs/07-mac-control.md)
+`wake-tv`, `sleep-tv`, `mirror-tv`, `stop-tv-mirror`. **An optional add-on.** Nothing in parts 0–5 depends on it.
+- **Who gets offered it:** ask whether they use a Mac. On Windows or Linux, skip this part without mentioning mirroring. `wake-tv` and `sleep-tv` are plain bash and Python, so a Linux user can have those two if they ask. Mirroring is macOS only (ScreenCaptureKit, VideoToolbox). Don't try to port it during a setup session.
+- **Requirements:** `wake-tv` and `sleep-tv` need only ADB and `local.properties`. Mirroring also needs the home screen app from part 2 *installed* (not necessarily set as home), macOS 14+, and `swiftc` (Xcode or Command Line Tools).
+- **Files in the module:** `scripts/{wake-tv,sleep-tv,mirror-tv,stop-tv-mirror}`, `mac/` (Mac sender; compiled into `mac/.build/`, git-ignored), `app/.../Mirror.kt` and its `MirrorActivity` entry in the manifest (the TV receiver). `MirrorActivity` does nothing until `mirror-tv` opens it: no service, no background work. Users who skip this part can keep the stock app build.
+- Offer the commands they want; each step below is read-only unless marked.
+- **Address:** find the TV's IP (`adb devices -l`, or the port-5555 scan in the doc; the doc's `192.168.1.50` is only an example) and the Wi-Fi MAC (`cat /sys/class/net/wlan0/address`). Write `tv.ip` / `tv.mac` into `local.properties`.
+- **Wake-on-LAN:** check the brand's setting (table in the doc). If it's off, the user turns it on in TV settings.
+- **Wi-Fi band:** `dumpsys wifi | grep mWifiInfo` → `Frequency`. On 2.4 GHz, recommend moving both TV and Mac to 5 GHz before mirroring (the user does it; the Wi-Fi password never goes through you). After a switch, re-check the TV's IP.
+- **Decoders:** `grep -A12 'c2.*hevc.decoder' /vendor/etc/media_codecs*.xml` should show a hardware HEVC/AVC decoder with `low-latency`.
+- **Install (ask first):** symlink the four scripts into `~/.local/bin` (on their PATH); mirroring needs the home screen app installed or updated (it contains `MirrorActivity`). Back up the installed APK first (`pm path` → `adb pull` into `backups/`) and note the undo in `my-tv-changes.md`.
+- **Verify the TV side yourself** with `mirror-tv --test` (a moving pattern, needs no permission), then read `$TMPDIR/tvmirror.log` and `adb logcat -s Mirror:I`. Tell them first: it briefly takes over the TV screen; `--extend --test` also briefly adds a screen to their Mac.
+- **The real screen test is theirs:** `mirror-tv` must be run in *their* terminal app. It needs Screen & System Audio Recording permission for that app. The Claude app's shell also can't reach the local network ("No route to host").
+- `wake-tv` / `sleep-tv` turn the TV off and on: ask before testing them while someone may be watching.
+
+Lessons from building it (don't repeat these):
+- A still Mac screen sends no frames, and the TV decoder holds the first frame → black screen. Fixed by repeating the last frame; if it comes back, check `repeats` in the log.
+- The capture needs `queueDepth` 8; with 3 the Mac delivered only 20–40 fps.
+- Sound stutter came from a tiny AudioTrack buffer with non-blocking writes; the jitter-buffer thread fixed it.
+- Occasional ~100 ms hitches were the Mac ↔ router Wi-Fi link, not the TV. AWDL off and the TV Wi-Fi lock didn't help; `--smooth` hides them at ~150 ms delay. Suggest an Ethernet adapter on the Mac if they want both.
+- `adb connect` sometimes says "No route to host" even though the TV answers ping: `adb kill-server` and connect again.
+
 ## Useful facts
 
 - Commands: `adb -s <ip:port> shell ...`. Many TVs drop the ADB connection briefly after big changes; reconnect with `adb connect` and check `uptime` to see if it rebooted.

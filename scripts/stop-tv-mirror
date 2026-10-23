@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Stop mirroring the Mac to the TV (plain or --extend). The TV goes back to what it showed before,
+# and with --extend the TV screen disappears from the Mac and its windows move back.
+
+set -euo pipefail
+
+pidfile="${TMPDIR:-/tmp}/tvmirror.pid"
+
+if [[ ! -f "$pidfile" ]] || ! kill -0 "$(cat "$pidfile")" 2>/dev/null; then
+  rm -f "$pidfile"
+  echo "Not mirroring."
+  exit 0
+fi
+
+pid="$(cat "$pidfile")"
+kill "$pid"
+for _ in $(seq 1 10); do
+  kill -0 "$pid" 2>/dev/null || break
+  sleep 0.3
+done
+kill -9 "$pid" 2>/dev/null || true
+rm -f "$pidfile"
+echo "Stopped mirroring."

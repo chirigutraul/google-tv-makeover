@@ -14,3 +14,9 @@
 | No sound after a restart (Philips) | You disabled `org.droidtv.tv.playFiAudioService`; `pm enable` it |
 | Build fails: "SDK location not found" | Set `sdk.dir` in `local.properties` |
 | Build fails: Java version | Use JDK 17+: `export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"` |
+| `wake-tv`: "No answer from the TV after 30s" | Wake-on-LAN is off ([07-mac-control](07-mac-control.md#3-turn-on-wake-on-lan-on-the-tv-for-wake-tv)), `tv.ip`/`tv.mac` are wrong, or the TV is in deep standby / unplugged |
+| `mirror-tv`: "No permission to record the screen" | Allow your terminal app in System Settings → Privacy & Security → Screen & System Audio Recording, restart it, run again |
+| `mirror-tv`: "Can't reach the TV at …:7070" | The home screen app (with the Mirror screen) isn't installed or is outdated; or you ran it from inside the Claude app (run it in your own terminal) |
+| Mirroring shows black until the mouse moves | Pull the latest version: the Mac now repeats still frames. Check `repeats` in `$TMPDIR/tvmirror.log` |
+| Mirroring is choppy or has small freezes | Use 5 GHz Wi-Fi; try `mirror-tv --smooth`; check `skipped` and `delay` in `$TMPDIR/tvmirror.log` |
+| Mac stays muted after mirroring | `osascript -e "set volume without output muted"` |

@@ -14,6 +14,7 @@ Built and tested on a **Philips Ambilight Google TV** (Android TV 14, 2.8 GB RAM
 | 4. Home button | Make the remote's Home button open the new home screen | [docs/04-home-button.md](docs/04-home-button.md) |
 | 5. Screensavers | Load your own photos, or a pack of 700 Chromecast backgrounds | [docs/05-screensavers.md](docs/05-screensavers.md) |
 | 6. Twitch card | A "Live now" card for your favourite streamers when you select Twitch | [docs/06-twitch.md](docs/06-twitch.md) |
+| 7. Mac commands (optional) | `wake-tv`, `sleep-tv`, and `mirror-tv`: your Mac's screen and sound on the TV, or the TV as a second screen. Free, no ad apps. macOS only. | [docs/07-mac-control.md](docs/07-mac-control.md) |
 
 Everything is reversible: [docs/undo.md](docs/undo.md). Problems: [docs/troubleshooting.md](docs/troubleshooting.md).
 
@@ -41,6 +42,7 @@ Follow the guides in order. Each one lists the exact commands, what they do, and
 - **Settings panel**: HDMI inputs, Picture, Sound, Wi-Fi, all TV settings.
 - **Twitch "Live now"** card (optional).
 - About **90 MB of RAM**, versus roughly 150 MB for the Google TV home screen.
+- **Mirror screen** for `mirror-tv` (only runs while you're mirroring).
 
 Source: [app/](app/), Kotlin + Jetpack Compose. Your personal settings (dock, Twitch keys, streamers) go in `local.properties`, which is never committed. See [local.properties.example](local.properties.example).
 
@@ -49,6 +51,7 @@ Source: [app/](app/), Kotlin + Jetpack Compose. Your personal settings (dock, Tw
 - A Google TV / Android TV on the same Wi-Fi as your computer
 - macOS, Linux or Windows with [Android platform tools](https://developer.android.com/tools/releases/platform-tools) (ADB)
 - For the home screen: [Android Studio](https://developer.android.com/studio) (or just its SDK + JDK 17)
+- For the Mac commands: macOS 14+ with Xcode or the Command Line Tools
 
 ## Disclaimer
 
